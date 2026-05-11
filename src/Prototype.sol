@@ -19,18 +19,19 @@ abstract contract Prototype is IPrototype {
     /**
      * @inheritdoc IPrototype
      */
-    function made(bytes32 argshash, uint256 variant) public view returns (address home, bytes32 salt) {
+    function made(bytes32 argshash, uint256 variant) public view returns (bool exists, address home, bytes32 salt) {
         salt = argshash ^ bytes32(variant);
         home = Clones.predictDeterministicAddress(proto, salt, proto);
+        exists = home.code.length > 0;
     }
 
     /**
      * @inheritdoc IPrototype
      */
-    function made(bytes calldata args, uint256 variant) public view returns (address home, bytes32 salt) {
+    function made(bytes calldata args, uint256 variant) public view returns (bool exists, address home, bytes32 salt) {
         // forge-lint: disable-next-line(asm-keccak256)
         bytes32 argshash = keccak256(abi.encode(args));
-        (home, salt) = made(argshash, variant);
+        (exists, home, salt) = made(argshash, variant);
     }
 
     /**
@@ -44,17 +45,19 @@ abstract contract Prototype is IPrototype {
      * On a clone:
      *   - Forwards the request back to the Prototype.
      */
-    function make(bytes calldata args, uint256 variant) external returns (address home) {
+    function make(bytes calldata args, uint256 variant)
+        external
+        returns (bool exists, address home, bytes32 salt)
+    {
         if (address(this) == proto) {
-            bytes32 salt;
-            (home, salt) = made(args, variant);
+            (exists, home, salt) = made(args, variant);
 
-            if (home.code.length == 0) {
+            if (!exists) {
                 home = Clones.cloneDeterministic(proto, salt, 0);
                 IPrototype(home).zzInit(args, variant);
             }
         } else {
-            home = IPrototype(proto).make(args, variant);
+            (exists, home, salt) = IPrototype(proto).make(args, variant);
         }
     }
 
