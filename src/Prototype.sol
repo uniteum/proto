@@ -57,6 +57,7 @@ abstract contract Prototype is IPrototype {
             if (!exists) {
                 home = Clones.cloneDeterministic(proto, salt, 0);
                 IPrototype(home).zzInit(args, variant);
+                emit Made(home, salt, variant);
             }
         } else {
             (exists, home, salt) = IPrototype(proto).make(args, variant);
