@@ -29,8 +29,13 @@ abstract contract Prototype is IPrototype {
      * @inheritdoc IPrototype
      */
     function made(bytes calldata args, uint256 variant) public view returns (bool exists, address home, bytes32 salt) {
-        // forge-lint: disable-next-line(asm-keccak256)
-        bytes32 argshash = keccak256(abi.encode(args));
+        // Equivalent to: bytes32 argshash = keccak256(args);
+        // See https://www.getfoundry.sh/forge/linting/asm-keccak256
+        bytes32 argshash;
+        assembly ("memory-safe") {
+            calldatacopy(mload(0x40), args.offset, args.length)
+            argshash := keccak256(mload(0x40), args.length)
+        }
         (exists, home, salt) = made(argshash, variant);
     }
 
@@ -45,10 +50,7 @@ abstract contract Prototype is IPrototype {
      * On a clone:
      *   - Forwards the request back to the Prototype.
      */
-    function make(bytes calldata args, uint256 variant)
-        external
-        returns (bool exists, address home, bytes32 salt)
-    {
+    function make(bytes calldata args, uint256 variant) external returns (bool exists, address home, bytes32 salt) {
         if (address(this) == proto) {
             (exists, home, salt) = made(args, variant);
 
