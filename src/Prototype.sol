@@ -68,7 +68,7 @@ abstract contract Prototype is IPrototype {
      * @inheritdoc IPrototype
      * @dev Must be implemented by derived classes.
      */
-    function zzInit(bytes calldata args, uint256 variant) public virtual onlyProto {}
+    function zzInit(bytes calldata args, uint256 variant) external virtual;
 
     /**
      * @notice Restricts calls to the Prototype implementation.
